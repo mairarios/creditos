@@ -1,10 +1,15 @@
 package ar.com.ada.creditos;
 
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 
+import org.hibernate.annotations.SourceType;
 import org.hibernate.exception.ConstraintViolationException;
 
 import ar.com.ada.creditos.entities.*;
@@ -16,59 +21,102 @@ public class ABM {
     public static Scanner Teclado = new Scanner(System.in);
 
     protected ClienteManager ABMCliente = new ClienteManager();
+    protected PrestamoManager ABMPrestamo = new PrestamoManager();
 
     public void iniciar() throws Exception {
 
         try {
 
             ABMCliente.setup();
+            ABMPrestamo.setup();
 
             printOpciones();
 
             int opcion = Teclado.nextInt();
             Teclado.nextLine();
 
-            while (opcion > 0) {
+            if (opcion == 1) {
+                printOpcionCliente();
+                int opcionC = Teclado.nextInt();
+                Teclado.nextLine();
+                while (opcionC > 0) {
 
-                switch (opcion) {
-                    case 1:
+                    switch (opcionC) {
+                        case 1:
 
-                        try {
-                            alta();
-                        } catch (ClienteDNIException exdni) {
-                            System.out.println("Error en el DNI. Indique uno valido");
-                        }
-                        break;
+                            try {
+                                alta();
+                            } catch (ClienteDNIException exdni) {
+                                System.out.println("Error en el DNI. Indique uno valido");
+                            }
+                            break;
 
-                    case 2:
-                        baja();
-                        break;
+                        case 2:
+                            baja();
+                            break;
 
-                    case 3:
-                        modifica();
-                        break;
+                        case 3:
+                            modifica();
+                            break;
 
-                    case 4:
-                        listar();
-                        break;
+                        case 4:
+                            listar();
+                            break;
 
-                    case 5:
-                        listarPorNombre();
-                        break;
+                        case 5:
+                            listarPorNombre();
+                            break;
 
-                    default:
-                        System.out.println("La opcion no es correcta.");
-                        break;
+                        default:
+                            System.out.println("La opcion no es correcta.");
+                            break;
+                    }
+
+                    printOpcionCliente();
+
+                    opcionC = Teclado.nextInt();
+                    Teclado.nextLine();
+                }
+            } else {
+                printOpcionPrestamo();
+                int opcionP = Teclado.nextInt();
+                Teclado.nextLine();
+                while (opcionP > 0) {
+
+                    switch (opcionP) {
+                        case 1:
+                            agregarPrestamo();
+                            break;
+
+                        case 2:
+                            listarPrestamo();
+                            break;
+
+                        case 3:
+                            modificaPrestamo();
+                            break;
+
+                        
+                        case 5:
+                            listarPorNombre();
+                            break;
+
+                        default:
+                            System.out.println("La opcion no es correcta.");
+                            break;
+                    }
+
+                    printOpcionPrestamo();
+
+                    opcionP = Teclado.nextInt();
+                    Teclado.nextLine();
                 }
 
-                printOpciones();
-
-                opcion = Teclado.nextInt();
-                Teclado.nextLine();
             }
 
             // Hago un safe exit del manager
             ABMCliente.exit();
+            ABMPrestamo.exit();
 
         } catch (Exception e) {
             // TODO: handle exception
@@ -81,14 +129,16 @@ public class ABM {
 
     }
 
-    public void alta() throws Exception {
+
+
+        public void alta() throws Exception {
         Cliente cliente = new Cliente();
         System.out.println("Ingrese el nombre:");
         cliente.setNombre(Teclado.nextLine());
         System.out.println("Ingrese el DNI:");
         cliente.setDni(Teclado.nextInt());
         Teclado.nextLine();
-        System.out.println("Ingrese la domicilio:");
+        System.out.println("Ingrese el domicilio:");
         cliente.setDomicilio(Teclado.nextLine());
 
         System.out.println("Ingrese el Domicilio alternativo(OPCIONAL):");
@@ -98,15 +148,6 @@ public class ABM {
         if (domAlternativo != null)
             cliente.setDomicilioAlternativo(domAlternativo);
 
-
-        Prestamo prestamo = new Prestamo();
-        BigDecimal importePrestamo = new BigDecimal(5000);
-        prestamo.setImporte(importePrestamo); //forma 1
-        prestamo.setFecha((new Date())); //fecha actual de la maquina forma 2
-        prestamo.setFechaAlta((new Date()));
-        prestamo.setCuotas(10); //le vamos a dar 10 cuotas por defecto
-        prestamo.setCliente(cliente);
-        
         ABMCliente.create(cliente);
 
         /*
@@ -119,6 +160,8 @@ public class ABM {
         System.out.println("Cliente generada con exito.  " + cliente);
 
     }
+    
+    
 
     public void baja() {
         System.out.println("Ingrese el nombre:");
@@ -243,9 +286,8 @@ public class ABM {
 
     public void mostrarCliente(Cliente cliente) {
 
-        System.out.print("Id: " + cliente.getClienteId() + " Nombre: " + cliente.getNombre()
-        + " DNI: " + cliente.getDni()
-        + " Domicilio: " + cliente.getDomicilio());
+        System.out.print("Id: " + cliente.getClienteId() + " Nombre: " + cliente.getNombre() + " DNI: "
+                + cliente.getDni() + " Domicilio: " + cliente.getDomicilio());
 
         if (cliente.getDomicilioAlternativo() != null)
             System.out.println(" Alternativo: " + cliente.getDomicilioAlternativo());
@@ -253,7 +295,126 @@ public class ABM {
             System.out.println();
     }
 
+    public void agregarPrestamo() {
+        System.out.println("Ingrese el ID del cliente al que le quiere agregar un prestamo");
+        int clienteId = Teclado.nextInt();
+        Cliente c1 = ABMCliente.read(clienteId);
+        if (c1 == null) {
+            System.out.println("El cliente no se encuentra");
+            return;
+        }
+        Prestamo prestamo = new Prestamo();
+        System.out.println("Ingrese el monto: ");
+        prestamo.setImporte(Teclado.nextBigDecimal());
+        prestamo.setCliente(c1);
+        System.out.println("Ingrese las cuotas: ");
+        prestamo.setCuotas(Teclado.nextInt());
+        Teclado.nextLine();
+        System.out.println("Introduzca la fecha con formato dd/mm/yyyy");
+        Date date = null;
+        DateFormat df = new SimpleDateFormat("dd/mm/yyyy");
+        try {
+            date = df.parse(Teclado.nextLine());
+            prestamo.setFecha(date);
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+     
+        prestamo.setFechaAlta(new Date());
+        ABMPrestamo.create(prestamo);
+
+        System.out.println("Prestamo cargado con exito");
+        
+    }
+
+    public void listarPrestamo() {
+
+        List<Prestamo> todos = ABMPrestamo.buscarTodosLosPrestamos();
+        for (Prestamo p : todos) {
+            mostrarPrestamo(p);
+        }
+
+    }
+
+    public void mostrarPrestamo(Prestamo prestamo) {
+
+        System.out.print("Id Prestamo: " + prestamo.getPrestamoId() + " Cliente: " + prestamo.getCliente().getNombre() + " Importe: " + prestamo.getImporte()
+                + " Cantidad de cuotas: " + prestamo.getCuotas() + " Fecha de alta: " + prestamo.getFechaAlta());
+
+    }
+
+    public void modificaPrestamo() throws Exception {
+       
+
+        System.out.println("Ingrese el ID del prestamo para modificarlo:");
+        int id = Teclado.nextInt();
+        Teclado.nextLine();
+        Prestamo prestamoEncontrado = ABMPrestamo.read(id);
+
+        if (prestamoEncontrado != null) {
+
+            // RECOMENDACION NO USAR toString(), esto solo es a nivel educativo.
+            System.out.println(prestamoEncontrado.getPrestamoId() + " seleccionado para modificacion.");
+
+            System.out.println(
+                    "Elija qué dato del prestamo desea modificar: \n1: monto, \n2: cuota, \n3: fecha");
+            int selecper = Teclado.nextInt();
+
+            switch (selecper) {
+                case 1:
+                    System.out.println("Ingrese el nuevo monto:");
+                    Teclado.nextBigDecimal();
+                    prestamoEncontrado.setImporte(Teclado.nextBigDecimal());
+                    Teclado.nextLine();
+
+                    break;
+                case 2:
+                    System.out.println("Ingrese las cuotas:");
+                    Teclado.nextLine();
+                    prestamoEncontrado.setCuotas(Teclado.nextInt());
+                    Teclado.nextLine();
+
+                    break;
+                case 3:
+                    System.out.println("Ingrese la nueva fecha:");
+                    Date date = null;
+                    DateFormat df = new SimpleDateFormat("dd/mm/yyyy");
+                    try {
+                        date = df.parse(Teclado.nextLine());
+                        prestamoEncontrado.setFecha(date);
+                    } catch (Exception ex) {
+                        System.out.println(ex);
+                    }
+
+                    break;
+                
+
+                default:
+                    break;
+            }
+
+             //Teclado.nextLine();
+
+            ABMPrestamo.update(prestamoEncontrado);
+
+            System.out.println("El registro de " + prestamoEncontrado.getPrestamoId() + " ha sido modificado.");
+
+        } else {
+            System.out.println("Prestamo no encontrado.");
+        }
+
+    }
+
     public static void printOpciones() {
+        System.out.println("=======================================");
+        System.out.println("");
+        System.out.println("1. Menú Clientes");
+        System.out.println("2. Menu Prestamos");
+        System.out.println("");
+        System.out.println("=======================================");
+    }
+
+    public static void printOpcionCliente() {
         System.out.println("=======================================");
         System.out.println("");
         System.out.println("1. Para agregar un cliente.");
@@ -264,5 +425,18 @@ public class ABM {
         System.out.println("0. Para terminar.");
         System.out.println("");
         System.out.println("=======================================");
+    }
+
+    public static void printOpcionPrestamo() {
+        System.out.println("=======================================");
+        System.out.println("");
+        System.out.println("1. Agregar un prestamo a un cliente");
+        System.out.println("2. Mostrar todos los prestamos");
+        System.out.println("3. Modificar un prestamo");
+        System.out.println("4. Eliminar un prestamo");
+        System.out.println("0. Salir");
+        System.out.println("");
+        System.out.println("=======================================");
+
     }
 }
