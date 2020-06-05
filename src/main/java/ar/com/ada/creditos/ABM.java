@@ -96,7 +96,6 @@ public class ABM {
                             modificaPrestamo();
                             break;
 
-                        
                         case 5:
                             listarPorNombre();
                             break;
@@ -129,9 +128,7 @@ public class ABM {
 
     }
 
-
-
-        public void alta() throws Exception {
+    public void alta() throws Exception {
         Cliente cliente = new Cliente();
         System.out.println("Ingrese el nombre:");
         cliente.setNombre(Teclado.nextLine());
@@ -160,8 +157,6 @@ public class ABM {
         System.out.println("Cliente generada con exito.  " + cliente);
 
     }
-    
-    
 
     public void baja() {
         System.out.println("Ingrese el nombre:");
@@ -319,12 +314,12 @@ public class ABM {
         } catch (Exception ex) {
             System.out.println(ex);
         }
-     
+
         prestamo.setFechaAlta(new Date());
         ABMPrestamo.create(prestamo);
 
         System.out.println("Prestamo cargado con exito");
-        
+
     }
 
     public void listarPrestamo() {
@@ -338,13 +333,13 @@ public class ABM {
 
     public void mostrarPrestamo(Prestamo prestamo) {
 
-        System.out.print("Id Prestamo: " + prestamo.getPrestamoId() + " Cliente: " + prestamo.getCliente().getNombre() + " Importe: " + prestamo.getImporte()
-                + " Cantidad de cuotas: " + prestamo.getCuotas() + " Fecha de alta: " + prestamo.getFechaAlta());
+        System.out.println("Id Prestamo: " + prestamo.getPrestamoId() + " Cliente: " + prestamo.getCliente().getNombre()
+                + " Importe: " + prestamo.getImporte() + " Cantidad de cuotas: " + prestamo.getCuotas()
+                + " Fecha de alta: " + prestamo.getFechaAlta());
 
     }
 
     public void modificaPrestamo() throws Exception {
-       
 
         System.out.println("Ingrese el ID del prestamo para modificarlo:");
         int id = Teclado.nextInt();
@@ -356,8 +351,7 @@ public class ABM {
             // RECOMENDACION NO USAR toString(), esto solo es a nivel educativo.
             System.out.println(prestamoEncontrado.getPrestamoId() + " seleccionado para modificacion.");
 
-            System.out.println(
-                    "Elija qué dato del prestamo desea modificar: \n1: monto, \n2: cuota, \n3: fecha");
+            System.out.println("Elija qué dato del prestamo desea modificar: \n1: monto, \n2: cuota, \n3: fecha");
             int selecper = Teclado.nextInt();
 
             switch (selecper) {
@@ -387,13 +381,12 @@ public class ABM {
                     }
 
                     break;
-                
 
                 default:
                     break;
             }
 
-             //Teclado.nextLine();
+            // Teclado.nextLine();
 
             ABMPrestamo.update(prestamoEncontrado);
 
