@@ -9,12 +9,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 
+import javax.persistence.Id;
+
 import org.hibernate.annotations.SourceType;
 import org.hibernate.exception.ConstraintViolationException;
 
 import ar.com.ada.creditos.entities.*;
+import ar.com.ada.creditos.entities.reportes.PrestamoPorCliente;
 import ar.com.ada.creditos.excepciones.*;
 import ar.com.ada.creditos.managers.*;
+import ar.com.ada.creditos.services.ReporteService;
 
 public class ABM {
 
@@ -22,6 +26,9 @@ public class ABM {
 
     protected ClienteManager ABMCliente = new ClienteManager();
     protected PrestamoManager ABMPrestamo = new PrestamoManager();
+    protected CancelacionManager AMBCancelacion = new CancelacionManager();
+    protected ReporteService reporteService = new ReporteService(ABMPrestamo);
+    
 
     public void iniciar() throws Exception {
 
@@ -29,6 +36,7 @@ public class ABM {
 
             ABMCliente.setup();
             ABMPrestamo.setup();
+            AMBCancelacion.setup();
 
             printOpciones();
 
@@ -96,8 +104,20 @@ public class ABM {
                             modificaPrestamo();
                             break;
 
+                        case 4:
+                            eliminarPrestamo();
+                            break;
+
                         case 5:
-                            listarPorNombre();
+                            agregarCancelacion();
+                            break;
+
+                        case 6:
+                            prestamoPorCliente();
+                            break;
+
+                        case 7:
+                            totalDePrestamos();
                             break;
 
                         default:
@@ -214,7 +234,7 @@ public class ABM {
             System.out.println(clienteEncontrado.toString() + " seleccionado para modificacion.");
 
             System.out.println(
-                    "Elija qué dato de la cliente desea modificar: \n1: nombre, \n2: DNI, \n3: domicilio, \n4: domicilio alternativo");
+                    "Elija qué dato de la cliente desea modificar: \n1: Nombre \n2: DNI \n3: Domicilio \n4: Domicilio Alternativo");
             int selecper = Teclado.nextInt();
 
             switch (selecper) {
@@ -290,7 +310,7 @@ public class ABM {
             System.out.println();
     }
 
-    public void agregarPrestamo() {
+    public void agregarPrestamo() throws Exception {
         System.out.println("Ingrese el ID del cliente al que le quiere agregar un prestamo");
         int clienteId = Teclado.nextInt();
         Cliente c1 = ABMCliente.read(clienteId);
@@ -348,10 +368,9 @@ public class ABM {
 
         if (prestamoEncontrado != null) {
 
-            // RECOMENDACION NO USAR toString(), esto solo es a nivel educativo.
             System.out.println(prestamoEncontrado.getPrestamoId() + " seleccionado para modificacion.");
 
-            System.out.println("Elija qué dato del prestamo desea modificar: \n1: monto, \n2: cuota, \n3: fecha");
+            System.out.println("Elija qué dato del prestamo desea modificar: \n1: Monto \n2: Cuota \n3: Fecha");
             int selecper = Teclado.nextInt();
 
             switch (selecper) {
@@ -398,6 +417,83 @@ public class ABM {
 
     }
 
+    public void eliminarPrestamo() {
+        System.out.println("Ingrese el nombre:");
+        String nombre = Teclado.nextLine();
+        System.out.println("Ingrese el ID del Prestamo:");
+        int id = Teclado.nextInt();
+        Teclado.nextLine();
+        Prestamo prestamoEncontrado = ABMPrestamo.read(id);
+
+        if (prestamoEncontrado == null) {
+            System.out.println("Prestamo no encontrado.");
+
+        } else {
+
+            try {
+
+                ABMPrestamo.delete(prestamoEncontrado);
+                System.out.println(
+                        "El registro del prestamo " + prestamoEncontrado.getPrestamoId() + " ha sido eliminado.");
+            } catch (Exception e) {
+                System.out.println("Ocurrio un error al eliminar una cliente. Error: " + e.getCause());
+            }
+
+        }
+    }
+
+    public void agregarCancelacion() {
+        System.out.println("Ingrese el ID del prestamo al que le quiere agregar un pago");
+        int prestamoId = Teclado.nextInt();
+        Prestamo p1 = ABMPrestamo.read(prestamoId);
+        if (p1 == null) {
+            System.out.println("El prestamo no se encuentra");
+            return;
+        }
+
+        Cancelacion cancelacion = new Cancelacion();
+        System.out.println("Ingrese el monto a pagar: ");
+        cancelacion.setImporte(Teclado.nextBigDecimal());
+        cancelacion.setPrestamo(p1);
+        System.out.println("Ingrese la cuota correspondiente: ");
+        cancelacion.setCuota(Teclado.nextInt());
+        Teclado.nextLine();
+        System.out.println("Introduzca la fecha con formato dd/mm/yyyy");
+        Date date = null;
+        DateFormat df = new SimpleDateFormat("dd/mm/yyyy");
+        try {
+            date = df.parse(Teclado.nextLine());
+            cancelacion.setFechaCancelacion(date);
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+
+        AMBCancelacion.create(cancelacion);
+
+        System.out.println("Pago ingresado con exito");
+
+    }
+
+    public void prestamoPorCliente() {
+        System.out.println("Ingrese el ID del cliente: ");
+        int clienteId = Teclado.nextInt();
+        Teclado.nextLine();
+        reporteService.mostrarReportePrestamoPorCliente(clienteId);
+        Cliente clienteEncontrado = ABMCliente.read(clienteId);
+
+        if (clienteEncontrado == null) {
+            System.out.println("Cliente no encontrado.");
+
+        } else {
+            reporteService.mostrarReportePrestamoPorCliente(clienteId);
+            
+        }
+    }
+
+    public void totalDePrestamos(){
+        reporteService.mostrarReporteTotalDePrestamos();
+    }
+
     public static void printOpciones() {
         System.out.println("=======================================");
         System.out.println("");
@@ -427,6 +523,9 @@ public class ABM {
         System.out.println("2. Mostrar todos los prestamos");
         System.out.println("3. Modificar un prestamo");
         System.out.println("4. Eliminar un prestamo");
+        System.out.println("5. Agregar pagos");
+        System.out.println("6. Mostrar prestamos por cliente");
+        System.out.println("7. Mostrar total de prestamos");
         System.out.println("0. Salir");
         System.out.println("");
         System.out.println("=======================================");

@@ -1,6 +1,5 @@
 package ar.com.ada.creditos.managers;
 
-
 import java.util.List;
 import java.util.logging.Level;
 
@@ -13,6 +12,8 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 
 import ar.com.ada.creditos.entities.*;
+import ar.com.ada.creditos.entities.reportes.PrestamoPorCliente;
+import ar.com.ada.creditos.entities.reportes.ReportePrestamo;
 
 public class PrestamoManager {
 
@@ -74,7 +75,17 @@ public class PrestamoManager {
         session.close();
     }
 
-    
+    public void delete(Prestamo prestamo) {
+
+        Session session = sessionFactory.openSession();
+        session.beginTransaction();
+
+        session.delete(prestamo);
+
+        session.getTransaction().commit();
+        session.close();
+    }
+
 
     /**
      * Este metodo en la vida real no debe existir ya qeu puede haber miles de
@@ -119,6 +130,23 @@ public class PrestamoManager {
 
     }
 
+    public List<PrestamoPorCliente> mostrarReportePrestamoPorCliente(int clienteId){
+        Session session = sessionFactory.openSession();
+        //SQL
+        Query queryReportePorCliente = session.createNativeQuery("SELECT c.cliente_id, c.nombre, count(*) cantidad, max(p.importe) maximo, sum(p.importe) total FROM cliente c inner join prestamo p on c.cliente_id = p.cliente_id WHERE c.cliente_id = ? group by c.cliente_id, c.nombre" , PrestamoPorCliente.class);
+        queryReportePorCliente.setParameter(1, clienteId);
+        List<PrestamoPorCliente> reportePrestamoPorClientes =queryReportePorCliente.getResultList();
+
+        return reportePrestamoPorClientes;
+    }
+
+    public List<ReportePrestamo> mostrarReporteDePrestamo(){
+        Session session = sessionFactory.openSession();
+        Query queryReporteDePrestamo = session.createNativeQuery("SELECT count(*) cantidad, sum(p.importe) total FROM prestamo p", ReportePrestamo.class);
+        List<ReportePrestamo> reporteDePrestamos = queryReporteDePrestamo.getResultList();
+        return reporteDePrestamos;
+    
+    }
     public void exitPrestamo() {
         sessionFactory.close();
     }

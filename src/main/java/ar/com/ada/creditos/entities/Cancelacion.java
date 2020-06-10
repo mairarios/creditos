@@ -16,7 +16,9 @@ public class Cancelacion {
 private int cancelacionId;
 @ManyToOne
 @JoinColumn(name = "prestamo_id", referencedColumnName = "prestamo_id")
+private Prestamo prestamo;
 
+@Column(name= "fecha_cancelacion")
 private Date fechaCancelacion;
 private BigDecimal importe;
 @Column(name= "cuota")
@@ -52,6 +54,14 @@ public int getCuota() {
 
 public void setCuota(int cuota) {
     this.cuota = cuota;
+}
+
+public Prestamo getPrestamo() {
+    return prestamo;
+}
+
+public void setPrestamo(Prestamo prestamo) {
+    this.prestamo = prestamo;
 }
 
 
